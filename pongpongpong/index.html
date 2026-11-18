@@ -55,7 +55,7 @@
   <p style="font-size:17px">클릭·스페이스바 = 무작위 무기 발사 (아래 버튼은 골라서 발사) 🚀🎯🔥💥<br>발사하면 알아서 날아다니며 터뜨려요</p>
   <p style="opacity:.7;font-size:16px">실패도, 시간제한도 없어요. 계속 즐기면 돼요.</p>
   <div class="go">눌러서 시작</div>
-  <div class="cr">© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com" onpointerdown="event.stopPropagation()">pin33@naver.com</a></div>
+  <div class="cr">퐁퐁퐁 버전 5 (2026-11-18)<br>© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com" onpointerdown="event.stopPropagation()">pin33@naver.com</a></div>
 </div>
 <script>
 (()=>{
@@ -63,12 +63,13 @@ const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const hud=document.getElementById('hud'),hint=document.getElementById('hint'),startEl=document.getElementById('start'),muteBtn=document.getElementById('mute');
 let W=0,H=0,DPR=1;
 let resizeRebuild=null,rsT=0;
-function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+let lowPerf=false,fpsEma=0.016,lastPerfAct=0; // 화면이 무거워지면 자동으로 가볍게 (화면이 버벅이면 소리도 끊기므로)
+function resize(){DPR=lowPerf?1:Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
   if(resizeRebuild){clearTimeout(rsT);rsT=setTimeout(resizeRebuild,250)}}
 addEventListener('resize',resize);resize();
 
 /* ---------- 오디오 (펜타토닉 = 어떻게 쳐도 아름다운 음) ---------- */
-let ac=null,master=null,sendBus=null,outNode=null,muted=false,started=false;
+let ac=null,master=null,sendBus=null,outNode=null,bedNoise=null,bedG=null,bedOsc=[],muted=false,started=false;
 const SCALE=[0,2,4,7,9];
 function initAudio(){
   if(ac)return;
@@ -83,6 +84,12 @@ function initAudio(){
     comp.threshold.value=-3;comp.knee.value=6;comp.ratio.value=3;comp.attack.value=0.002;comp.release.value=0.05;
     outNode=comp;
     master.connect(shaper);shaper.connect(comp);comp.connect(ac.destination);
+    // 끊기지 않는 소리층: 화면이 순간 버벅여 새 소리를 못 만들어도, 오디오 쪽에서 스스로 이어지다 천천히 사라짐 (대량·연쇄 폭발 때 무음 구간 방지)
+    const nb=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+    bedNoise=ac.createBufferSource();bedNoise.buffer=nb;bedNoise.loop=true;
+    const bbp=ac.createBiquadFilter();bbp.type='bandpass';bbp.frequency.value=2400;bbp.Q.value=0.5;
+    bedG=ac.createGain();bedG.gain.value=0;bedNoise.connect(bbp);bbp.connect(bedG);bedG.connect(master);bedNoise.start();
+    bedOsc=[0,1,2].map(i=>{const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.value=freqOf(5+i*2);g.gain.value=0;o.connect(g);g.connect(master);o.start();return{o,g}});
     // 은은한 메아리(공간감)
     sendBus=ac.createGain();sendBus.gain.value=0.35;
     const dl=ac.createDelay();dl.delayTime.value=0.28;
@@ -117,13 +124,19 @@ function slotDelay(){const n=ac.currentTime,t=Math.max(n,slotT);if(t-n>0.4)retur
 /* 터지는 소리 모으기: 구슬이 몇 개 터지든 프레임당 만드는 오디오 부품 수가 일정 → 끊김·무음 없이, 많이 터질수록 오히려 더 풍성하게 */
 const sndQ=[];
 let lastFlush=0;
+function bedPulse(n){ // 터질 때마다 소리층을 밀어 올리고, 0.4초에 걸쳐 서서히 줄임 → 사이에 공백이 생겨도 이어짐
+  if(!bedG||!ac)return;const t=ac.currentTime,lvl=Math.min(0.2,0.05+n*0.012),ch=chordNow();
+  bedG.gain.cancelScheduledValues(t);bedG.gain.setTargetAtTime(lvl,t,0.015);bedG.gain.setTargetAtTime(0.0001,t+0.12,0.28);
+  bedOsc.forEach((b,i)=>{b.o.frequency.setTargetAtTime(freqOf(ch[i%3]+5+(i>>1)*5),t,0.02);b.g.gain.cancelScheduledValues(t);
+    b.g.gain.setTargetAtTime(Math.min(0.06,0.02+n*0.004),t,0.02);b.g.gain.setTargetAtTime(0.0001,t+0.15,0.3)});
+}
 function flushSound(){
   const n=sndQ.length;if(!n)return;
   if(!ac||muted){sndQ.length=0;return}
   const now=performance.now();
   // 소리를 내는 빈도를 일정하게(초당 약 20번) 제한: 아무리 연속으로 터져도 오디오가 포화되지 않고, 그 사이 터진 구슬은 모아서 다음 소리에 함께 반영 → 소리가 아예 사라지지 않음
   if(now-lastFlush<48){if(n>600)sndQ.splice(0,n-600);return}
-  lastFlush=now;
+  lastFlush=now;bedPulse(n);
   if(n<=3){ // 적게 터질 때: 구슬마다 자기 악기 소리
     for(let i=0;i<n;i++){const s=sndQ[i],d=i*0.02;pop(d);inst(s.ik,freqOf(s.idx),0.17,1.3,d,true);if(s.c>=4)inst(s.ik,freqOf(snapChord(s.idx+2)),0.08,1.0,d+0.05,true)}
   }else{ // 대량으로 터질 때: 서로 다른 음을 최대 5개 골라 화음으로 + 우수수 쏟아지는 소리 + 묵직한 퍽 (겹쳐도 좋음, 항상 들림)
@@ -649,7 +662,7 @@ function popOrb(o,chain){
   // 즉각 보상: 터지는 순간 화면이 살짝 흔들리고, 배경이 구슬 색으로 번쩍이며 확 커졌다 돌아옴
   shake=Math.max(shake,Math.min(3.2,0.8+combo*0.2));pulse=Math.min(1,pulse+0.35);tintH=o.gold?48:o.hue;tintA=Math.min(0.22,tintA+0.06);
   if(navigator.vibrate&&!chain&&combo>=5)try{navigator.vibrate(14)}catch(e){}
-  const load=parts.length>1000?0:parts.length>600?0.25:parts.length>300?0.6:1; // 대량으로 터질 때 화면이 버벅여 소리까지 끊기지 않게 가루 수를 자동 조절
+  const load=(parts.length>1000?0:parts.length>600?0.25:parts.length>300?0.6:1)*(lowPerf?0.4:1); // 대량으로 터질 때 화면이 버벅여 소리까지 끊기지 않게 가루 수를 자동 조절
   const n=Math.floor((o.gold?44:20+Math.floor(o.r/4))*load);
   for(let k=0;k<n;k++){const a=rnd(0,6.283),s=rnd(60,o.gold?420:300);
     parts.push({x:o.x,y:o.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-40,life:1,dec:rnd(0.8,1.6),r:rnd(2,5.5),hue:o.gold?rnd(35,55):(o.hue+rnd(-25,25)+360)%360})}
@@ -710,7 +723,10 @@ for(let i=0;i<TARGET()+6;i++)spawn(true);
 resizeRebuild=()=>{if(!lastSpec||W<50||H<50)return;const b=buildScene(lastSpec).cvs;if(bgNext)bgNext=b;else bgCur=b};
 let prev=performance.now();
 function frame(now){
-  const dt=Math.min(0.05,(now-prev)/1000);prev=now;
+  const rawDt=(now-prev)/1000,dt=Math.min(0.05,rawDt);prev=now;
+  if(rawDt>0&&rawDt<1){fpsEma=fpsEma*0.92+rawDt*0.08;
+    if(fpsEma>0.034&&!lowPerf&&now-lastPerfAct>2000&&started){lowPerf=true;lastPerfAct=now;if(DPR>1)resize()} // 프레임이 느려지면 해상도·가루·후광을 줄임
+    else if(fpsEma<0.02&&lowPerf&&now-lastPerfAct>8000){lowPerf=false;lastPerfAct=now}}
   const t=now/1000;
   // 배경 (천천히 흐르는 그림 + 부드러운 전환)
   const z=1+pulse*0.03,bw=W*1.12*z,bh=H*1.12*z,ox=-(bw-W)/2+Math.sin(t*0.07)*W*0.05,oy=-(bh-H)/2+Math.cos(t*0.05)*H*0.05;
@@ -775,11 +791,12 @@ function frame(now){
     const s=Math.max(0.05,Math.min(1,(now-o.born)/500)),r=o.r*s*(1+Math.sin(t*2+o.ph)*0.03)*(1+(o.wob||0)*0.14);
     const h=o.gold?48:o.hue;
     // 바깥 후광
+    if(!lowPerf){ // 느린 기기에서는 후광 생략
     ctx.globalCompositeOperation='lighter';
     const hg=ctx.createRadialGradient(o.x,o.y,r*0.8,o.x,o.y,r*1.6);
     const hl=o.boss?(32+Math.sin(t*3)*8):50;
     hg.addColorStop(0,`hsla(${h},100%,${hl}%,${o.boss?0.55:0.4})`);hg.addColorStop(1,`hsla(${h},100%,${hl}%,0)`);
-    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(o.x,o.y,r*1.6,0,6.283);ctx.fill();
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(o.x,o.y,r*1.6,0,6.283);ctx.fill();}
     // 선명한 원색 구슬 몸통
     ctx.globalCompositeOperation='source-over';
     const gr=ctx.createRadialGradient(o.x-r*0.3,o.y-r*0.35,r*0.05,o.x,o.y,r);
