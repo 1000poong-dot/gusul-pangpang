@@ -55,7 +55,7 @@
   <p style="font-size:17px">클릭·스페이스바 = 무작위 무기 발사 (아래 버튼은 골라서 발사) 🚀🎯🔥💥<br>발사하면 알아서 날아다니며 터뜨려요</p>
   <p style="opacity:.7;font-size:16px">실패도, 시간제한도 없어요. 계속 즐기면 돼요.</p>
   <div class="go">눌러서 시작</div>
-  <div class="cr">퐁퐁퐁 버전 5 (2026-11-18)<br>© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com" onpointerdown="event.stopPropagation()">pin33@naver.com</a></div>
+  <div class="cr">퐁퐁퐁 버전 6 (2026-11-18)<br>© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com" onpointerdown="event.stopPropagation()">pin33@naver.com</a></div>
 </div>
 <script>
 (()=>{
@@ -74,7 +74,8 @@ const SCALE=[0,2,4,7,9];
 function initAudio(){
   if(ac)return;
   try{
-    ac=new (window.AudioContext||window.webkitAudioContext)();
+    // 사양이 낮은 PC(RAM 8GB 등)에서 소리가 끊기지 않게 출력 완충 시간을 조금 넉넉히(0.06초) — 반응 지연은 사람이 느끼기 어려운 수준
+    try{ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:0.06})}catch(e){ac=new (window.AudioContext||window.webkitAudioContext)()}
     master=ac.createGain();master.gain.value=muted?0:0.55;
     // 소리가 아무리 겹쳐도 전체 볼륨이 눌려 "순간 무음"이 되지 않게: 급격한 압축 대신 부드러운 포화(tanh)로 큰 소리만 둥글게 깎고, 압축기는 마지막 안전장치로만 약하게
     const shaper=ac.createWaveShaper(),curve=new Float32Array(2048);
@@ -725,7 +726,7 @@ let prev=performance.now();
 function frame(now){
   const rawDt=(now-prev)/1000,dt=Math.min(0.05,rawDt);prev=now;
   if(rawDt>0&&rawDt<1){fpsEma=fpsEma*0.92+rawDt*0.08;
-    if(fpsEma>0.034&&!lowPerf&&now-lastPerfAct>2000&&started){lowPerf=true;lastPerfAct=now;if(DPR>1)resize()} // 프레임이 느려지면 해상도·가루·후광을 줄임
+    if(fpsEma>0.027&&!lowPerf&&now-lastPerfAct>1500&&started){lowPerf=true;lastPerfAct=now;if(DPR>1)resize()} // 프레임이 느려지면 해상도·가루·후광을 줄임
     else if(fpsEma<0.02&&lowPerf&&now-lastPerfAct>8000){lowPerf=false;lastPerfAct=now}}
   const t=now/1000;
   // 배경 (천천히 흐르는 그림 + 부드러운 전환)
