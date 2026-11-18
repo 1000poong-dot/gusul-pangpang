@@ -108,13 +108,20 @@ function tone(freq,vol,dur,delay){
 /* 대량으로 터질 때도 소리가 사라지지 않도록: 버리지 않고 짧은 간격(0.035초)으로 차례차례 펼쳐서 연주 (롤/아르페지오처럼 들림) */
 const vend=[];let slotT=0;
 function voiceLoad(){const n=ac.currentTime;for(let i=vend.length-1;i>=0;i--)if(vend[i]<n)vend.splice(i,1);return vend.length}
-function slotDelay(){const n=ac.currentTime,t=Math.max(n,slotT);if(t-n>0.5)return -1;slotT=t+0.035;return t-n}
+function slotDelay(){const n=ac.currentTime,t=Math.max(n,slotT);if(t-n>0.4)return -1;slotT=t+((t-n)>0.2?0.022:0.035);return t-n} // 줄이 밀리면 간격을 좁혀 더 촘촘히
+let lastCheap=0;
+function blip(f,vol){ // 줄이 꽉 차도 소리가 끊기지 않게: 아주 가벼운 한 음 (오실레이터 1개)
+  if(!ac||muted)return;const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.004);g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+  o.connect(g);g.connect(master);o.start(t);o.stop(t+0.2);
+}
 const INSTR=['piano','marimba','xylo','flute','harp','kalimba','organ','bell']; // 빨 주 노 초 청록 파 보라 분홍
 function instOfHue(h){let bi=0,bd=999;[0,25,55,125,175,215,275,320].forEach((v,i)=>{const d=Math.min(Math.abs(h-v),360-Math.abs(h-v));if(d<bd){bd=d;bi=i}});return INSTR[bi]}
 function inst(kind,f,vol,dur,delay){
   if(!ac||muted)return;
   const t=ac.currentTime+(delay||0),g=ac.createGain();g.gain.value=0.75;g.connect(master);
-  const eco=voiceLoad()>30;vend.push(t+0.9); // 소리가 너무 많이 겹치면 가벼운 음색으로 (뭉개짐·끊김 방지)
+  const ld=voiceLoad();if(ld>80)return; // 오디오가 한계를 넘기 전에 안전하게 상한
+  const eco=ld>30;vend.push(t+0.9); // 소리가 너무 많이 겹치면 가벼운 음색으로 (뭉개짐·끊김 방지)
   if(!eco)g.connect(sendBus);
   const add=(type,mul,amp,dec,att)=>{const o=ac.createOscillator(),og=ac.createGain();o.type=type;o.frequency.value=f*mul;
     og.gain.setValueAtTime(0.0001,t);og.gain.exponentialRampToValueAtTime(Math.max(0.0002,amp*vol),t+(att||0.004));og.gain.exponentialRampToValueAtTime(0.0001,t+dec);
@@ -605,10 +612,12 @@ function popOrb(o,chain){
   }
   const base=Math.round((1-(o.r-24)/38)*6)+2;
   const idx=snapChord(Math.min(14,base+Math.min(combo-1,6)));
-  if(ac&&!muted){const d=slotDelay();
+  if(ac&&!muted){const d=voiceLoad()>80?-1:slotDelay();
     if(d>=0){const ik=o.gold?'bell':instOfHue(o.hue);
       if(d<0.25)pop(d);inst(ik,freqOf(idx),0.17,1.3,d);
-      if(combo>=4&&d<0.15)inst(ik,freqOf(snapChord(idx+2)),0.08,1.0,d+0.05)}} // 한꺼번에 많이 터져도 소리가 뭉개지지 않게
+      if(combo>=4&&d<0.15)inst(ik,freqOf(snapChord(idx+2)),0.08,1.0,d+0.05)}
+    else if(now-lastCheap>20){lastCheap=now;blip(freqOf(idx),0.11)} // 줄이 가득 찼어도 무음이 되지 않게 즉시 가벼운 소리
+  } // 한꺼번에 많이 터져도 소리가 뭉개지지 않게
   if(o.item){gainItem(o.item,o.x,o.y);flash=Math.max(flash,0.15)}
   checkMilestone();
   // 즉각 보상: 터지는 순간 화면이 살짝 흔들리고, 배경이 구슬 색으로 번쩍이며 확 커졌다 돌아옴
