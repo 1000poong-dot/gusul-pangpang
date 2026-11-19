@@ -24,6 +24,13 @@
   @keyframes got{50%{transform:scale(1.25);background:rgba(255,220,60,.6)}}
   @keyframes no{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
   #rankBtn{position:fixed;top:10px;right:64px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:22px;cursor:pointer}
+  #moneyBtn{position:fixed;top:10px;right:116px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,200,40,.28);color:#fff;font-size:22px;cursor:pointer}
+  #settle{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,8,25,.7);color:#fff;z-index:5}
+  #settle .box{background:rgba(25,30,70,.96);border-radius:20px;padding:20px 22px;width:min(92vw,380px);max-height:86vh;overflow:auto;border:1px solid rgba(255,220,100,.5);font-size:15px}
+  #settle h2{margin:0 0 8px;font-size:22px;text-align:center}
+  #settle table{width:100%;border-collapse:collapse}#settle td,#settle th{padding:4px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12)}
+  #settle .cl{margin-top:14px;text-align:center;padding:12px;border-radius:30px;background:linear-gradient(135deg,#ffd54a,#ff9a3c);color:#2a1800;font-weight:bold;cursor:pointer;font-size:18px}
+  .ic.bank{background:#ffb300;color:#222}
   #rank{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,8,25,.7);color:#fff;z-index:5}
   #rank .box{background:rgba(25,30,70,.96);border-radius:20px;padding:20px 22px;width:min(92vw,380px);max-height:86vh;overflow:auto;border:1px solid rgba(255,255,255,.3);font-size:15px}
   #rank h2{margin:0 0 8px;font-size:22px;text-align:center}#rank h3{margin:14px 0 6px;font-size:16px;color:#9fe0ff}
@@ -44,18 +51,20 @@
 <div id="hint"></div>
 <button id="mute" title="소리 켜기/끄기">🔊</button>
 <button id="rankBtn" title="기록과 순위">🏆</button>
+<button id="moneyBtn" title="무기 정산">💰</button>
 <div id="items"></div>
 <div id="rank"><div class="box" id="rankBox"></div></div>
+<div id="settle"><div class="box" id="settleBox"></div></div>
 <div id="start">
   <h1>✨ 퐁퐁퐁 ✨</h1>
   <p style="font-size:22px">퐁을 많이 모으는 게임!</p>
   <p>마우스를 움직이거나 손가락으로 문지르면 퐁!</p>
   <p style="font-size:16px">숫자가 적힌 단단한 구슬은 그 횟수만큼 맞히면 터지고, 크게 보상해요</p>
-  <p style="font-size:15px">무기를 쓰지 않고 아껴서 🏆에서 정산하면 퐁으로 바뀌어요</p>
-  <p style="font-size:17px">클릭·스페이스바 = 무작위 무기 발사 (아래 버튼은 골라서 발사) 🚀🎯🔥💥<br>발사하면 알아서 날아다니며 터뜨려요</p>
+  <p style="font-size:16px">⭐ 얻은 무기를 쓰지 않고 아껴서 💰에서 정산하면 무기 1개당 1,000~10,000퐁!</p>
+  <p style="font-size:17px">클릭·스페이스바 = 무작위 무기 발사 (아낀 ⭐무기는 아래 버튼으로만 써요) 🚀🎯🔥💥<br>발사하면 알아서 날아다니며 터뜨려요</p>
   <p style="opacity:.7;font-size:16px">실패도, 시간제한도 없어요. 계속 즐기면 돼요.</p>
   <div class="go">눌러서 시작</div>
-  <div class="cr">퐁퐁퐁 버전 7 (2026-11-18)<br>© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com" onpointerdown="event.stopPropagation()">pin33@naver.com</a></div>
+  <div class="cr">퐁퐁퐁 버전 8 (2026-11-19)<br>© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com" onpointerdown="event.stopPropagation()">pin33@naver.com</a></div>
 </div>
 <script>
 (()=>{
@@ -154,6 +163,8 @@ const INSTR=['piano','marimba','xylo','flute','harp','kalimba','organ','bell']; 
 function instOfHue(h){let bi=0,bd=999;[0,25,55,125,175,215,275,320].forEach((v,i)=>{const d=Math.min(Math.abs(h-v),360-Math.abs(h-v));if(d<bd){bd=d;bi=i}});return INSTR[bi]}
 function inst(kind,f,vol,dur,delay,force){
   if(!ac||muted)return;
+  if(kind.startsWith('drum:')){drum(kind.slice(5),f,vol,delay);return}      // 타악기
+  const vd=VOICES[kind];if(vd){voice(vd,f,vol,dur,delay,force);return}       // 확장 악기(바이올린·기타·시타르·가야금 …)
   const ld=voiceLoad();if(ld>150&&!force)return; // 장식용 소리만 상한 (터지는 소리는 force로 항상 재생)
   const t=ac.currentTime+(delay||0),g=ac.createGain();g.gain.value=0.75;g.connect(master);
   const eco=ld>45;vend.push(t+0.8); // 소리가 너무 많이 겹치면 가벼운 음색으로 (뭉개짐·끊김 방지)
@@ -173,6 +184,118 @@ function inst(kind,f,vol,dur,delay,force){
     case'organ':add('sine',1,0.55,0.8,0.02);add('sine',2,0.4,0.7,0.02);add('sine',3,0.25,0.55,0.02);add('sine',4,0.12,0.45,0.02);break; // 포근한 오르간
     default:add('sine',1,1,dur);add('triangle',2,0.25,dur*0.7);add('sine',3,0.1,dur*0.4);                                 // 종
   }
+}
+/* ---------- 확장 악기: 세계 여러 나라 악기를 흉내 낸 합성 음색 (현·관·건반·전통악기·타악기) ----------
+   p: [파형, 배음 배수, 세기, 감쇠초(0이면 길게 이어짐), 디튠(센트)] / att: 어택 / vib: [속도, 깊이] / lp: 저역통과(음높이의 몇 배) / n: 시작 소리(숨결·튕김) / o: 옥타브 이동 */
+const VOICES={
+  violin:{p:[['sawtooth',1,.5,0],['sawtooth',1,.4,0,9]],vib:[5.5,.012],lp:5,att:.09},
+  cello:{o:-1,p:[['sawtooth',1,.55,0],['sawtooth',1,.4,0,7]],vib:[5,.01],lp:3.5,att:.12},
+  contrabass:{o:-2,p:[['sawtooth',1,.7,0]],vib:[4.5,.008],lp:2.8,att:.1},
+  guitar:{p:[['triangle',1,.8,1],['sine',2,.4,.6],['sine',3,.25,.35],['sawtooth',1,.2,.15]],lp:5,att:.002,n:.15},
+  banjo:{p:[['sawtooth',1,.6,.35],['square',2,.3,.2],['triangle',3,.25,.15]],lp:7,att:.002,n:.2},
+  mandolin:{p:[['triangle',1,.7,.5,10],['triangle',1,.7,.5,-10]],att:.002,n:.1},
+  ukulele:{p:[['triangle',1,.8,.6],['sine',2,.3,.3]],lp:4,att:.002,n:.1},
+  sitar:{p:[['sawtooth',1,.6,1.2],['sawtooth',2.01,.4,1],['square',3.02,.3,.8]],lp:5.5,att:.003},
+  koto:{p:[['triangle',1,.8,1.3],['sine',2,.3,.8],['sine',4.1,.15,.3]],att:.002,n:.1},
+  gayageum:{p:[['triangle',1,.8,1.5],['sine',2,.3,.9],['sine',3,.15,.4]],att:.002,n:.12},
+  shamisen:{p:[['sawtooth',1,.6,.5],['triangle',2,.3,.3]],lp:4,att:.002,n:.3},
+  erhu:{p:[['sawtooth',1,.6,0],['sawtooth',1,.4,0,7]],vib:[6,.015],lp:4.5,att:.12},
+  haegeum:{p:[['sawtooth',1,.6,0],['square',1,.3,0,5]],vib:[6.5,.018],lp:4,att:.1},
+  dulcimer:{p:[['triangle',1,.8,1,6],['triangle',1,.8,1,-6],['sine',3,.3,.5]],att:.002},
+  harpsichord:{p:[['sawtooth',1,.5,.4],['square',2,.3,.25],['sawtooth',4,.15,.15]],lp:7,att:.002,n:.1},
+  bass:{o:-2,p:[['triangle',1,.9,.7],['sine',2,.3,.35]],lp:3.5,att:.004},
+  trumpet:{p:[['sawtooth',1,.7,0],['square',2,.3,0]],lp:6,att:.04},
+  horn:{o:-1,p:[['sawtooth',1,.7,0],['sawtooth',2,.2,0]],lp:3,att:.1},
+  tuba:{o:-2,p:[['sawtooth',1,.8,0]],lp:2.5,att:.08},
+  sax:{p:[['sawtooth',1,.6,0],['square',3,.25,0]],vib:[5,.01],lp:5,att:.05},
+  clarinet:{p:[['square',1,.5,0],['square',3,.25,0]],lp:5,att:.03},
+  oboe:{p:[['sawtooth',1,.5,0],['sawtooth',2,.5,0]],vib:[5,.006],lp:3,att:.04},
+  bassoon:{o:-1,p:[['sawtooth',1,.6,0],['sawtooth',2,.4,0]],lp:2.5,att:.05},
+  piccolo:{o:1,p:[['sine',1,.9,0],['sine',2,.1,0]],vib:[6,.01],att:.03},
+  panflute:{p:[['sine',1,.9,0],['sine',2,.1,0]],att:.06,n:.12},
+  ocarina:{p:[['sine',1,1,0]],att:.05},
+  recorder:{p:[['triangle',1,.8,0],['sine',2,.2,0]],att:.03},
+  whistle:{o:1,p:[['sine',1,1,0]],vib:[6,.012],att:.05},
+  daegeum:{p:[['triangle',1,.7,0],['sine',2,.2,0]],att:.08,n:.25},
+  piri:{p:[['sawtooth',1,.5,0],['sawtooth',2,.4,0]],vib:[6,.012],lp:3,att:.05},
+  harmonica:{p:[['square',1,.4,0],['sawtooth',1,.4,0,7]],vib:[5,.006],lp:4,att:.03},
+  accordion:{p:[['sawtooth',1,.4,0,-8],['sawtooth',1,.4,0],['sawtooth',1,.4,0,8]],lp:4,att:.04},
+  bagpipe:{p:[['sawtooth',1,.6,0],['square',1.5,.2,0]],lp:3,att:.02},
+  didgeridoo:{o:-2,p:[['sawtooth',1,.8,0]],vib:[.6,.03],lp:2,q:4,att:.1},
+  theremin:{p:[['sine',1,1,0]],vib:[5.5,.02],att:.15},
+  synth:{p:[['sawtooth',1,.5,0,-7],['sawtooth',1,.5,0,7]],lp:5,att:.03},
+  choir:{p:[['sine',1,.5,0],['sine',2,.3,0],['sine',3,.15,0]],vib:[5,.008],att:.2},
+  vibes:{p:[['sine',1,1,2],['sine',4,.3,.5]],att:.003},
+  glock:{o:1,p:[['sine',1,.8,1.2],['sine',3,.3,.6],['sine',5,.15,.3]],att:.002},
+  celesta:{o:1,p:[['sine',1,.9,1],['sine',4,.2,.3]],att:.002},
+  musicbox:{o:1,p:[['sine',1,.8,.7],['sine',3,.4,.35],['sine',6,.2,.2]],att:.002},
+  steelpan:{p:[['sine',1,.9,.7],['sine',2,.5,.5],['sine',3.01,.2,.3]],att:.003},
+  handpan:{p:[['sine',1,.9,1.4],['sine',2,.4,.9],['sine',3,.15,.5]],att:.003,n:.08},
+  churchbell:{o:-1,p:[['sine',1,.7,2],['sine',2.4,.35,1.4],['sine',3,.3,1.2],['sine',4.2,.2,.8]],att:.002},
+  gong:{o:-2,p:[['sine',1,.7,2.5],['sine',1.5,.4,2.2],['sine',2.3,.3,1.8],['sine',3.1,.25,1.2]],att:.004,n:.3}
+};
+// 타악기: [시작Hz, 끝Hz, 길이, 세기, 소음대역Hz, 소음세기]
+const DRUMS={taiko:[180,60,.6,.9,1200,.4],timpani:[160,95,.9,.7,0,0],conga:[330,200,.3,.7,2200,.3],bongo:[520,380,.18,.6,3000,.25],
+  tabla:[420,260,.35,.6,3500,.2],janggu:[210,130,.35,.8,2500,.35],tomtom:[150,85,.45,.8,1500,.3],snare:[220,160,.15,.4,4000,.8]};
+const ALLN=Object.keys(VOICES).concat(INSTR,Object.keys(DRUMS).map(d=>'drum:'+d)); // 특별 구슬이 무작위로 고르는 모든 악기
+function voice(d,f0,vol,dur,delay,force){
+  if(!ac||muted||(voiceLoad()>150&&!force))return;
+  const f=f0*Math.pow(2,d.o||0),t=ac.currentTime+(delay||0),att=d.att||0.005;
+  const g=ac.createGain();g.gain.value=0.7;let out=g;
+  if(d.lp){const bq=ac.createBiquadFilter();bq.type='lowpass';bq.frequency.value=Math.min(14000,d.lp*f);bq.Q.value=d.q||0.7;g.connect(bq);out=bq}
+  out.connect(master);if(voiceLoad()<40)out.connect(sendBus);
+  vend.push(t+dur*0.8);let first=true;
+  for(const [type,mul,amp,dec,det] of d.p){
+    const o=ac.createOscillator(),og=ac.createGain();o.type=type;o.frequency.value=f*mul;if(det)o.detune.value=det;
+    const end=t+Math.max(att+0.03,dec>0?Math.min(dec,dur*1.3):dur);
+    og.gain.setValueAtTime(0.0001,t);og.gain.exponentialRampToValueAtTime(Math.max(0.0002,amp*vol),t+att);
+    if(dec>0)og.gain.exponentialRampToValueAtTime(0.0001,end);
+    else{og.gain.setValueAtTime(Math.max(0.0002,amp*vol),t+Math.max(att,dur*0.65));og.gain.exponentialRampToValueAtTime(0.0001,end)}
+    if(d.vib&&first){const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=d.vib[0];lg.gain.value=f*mul*d.vib[1];l.connect(lg);lg.connect(o.frequency);l.start(t);l.stop(end+0.05)}
+    first=false;o.connect(og);og.connect(g);o.start(t);o.stop(end+0.05);
+  }
+  if(d.n)noiseBurst(0.06,d.n*vol*3,Math.min(8000,f*4),1,delay||0);
+}
+function drum(k,f,vol,delay){
+  const d=DRUMS[k];if(!d||!ac||muted)return;const m=Math.max(0.5,Math.min(2,f/261.63));
+  thud(d[0]*m,d[1]*m,d[2],Math.min(1,d[3]*vol*4),delay||0);
+  if(d[4])noiseBurst(Math.min(0.3,d[2]*0.4),Math.min(0.8,d[5]*vol*4),d[4],0.9,delay||0);
+}
+/* 특별 구슬(무지개): 맞을 때마다 지구상의 온갖 악기가 무작위로 울림 */
+function specialHit(o,step){
+  const ch=chordNow(),idx=ch[Math.random()*3|0]+5*(Math.random()*2|0)+(step>150?5:0),kind=ALLN[Math.random()*ALLN.length|0];
+  inst(kind,freqOf(idx),0.22,1.2,0,true);
+  if(Math.random()<0.55)inst(ALLN[Math.random()*ALLN.length|0],freqOf(snapChord(idx+2)),0.14,1,0.05,true);
+  thud(freqOf(ch[0])/3,freqOf(ch[0])/6,0.12,0.25);
+}
+/* 특별 구슬이 마지막에 터질 때: 천둥 + 지진 + 큰북 + 신비한 합창 — 오묘하지만 계속 듣고 싶은 소리 */
+function specialBreak(){
+  if(!ac||muted)return;
+  if(!nbuf){nbuf=ac.createBuffer(1,ac.sampleRate*0.5,ac.sampleRate);const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+  const t=ac.currentTime,ch=chordNow(),root=freqOf(ch[0])/4;
+  // 1) 지진: 극저음이 쿵 하고 부풀었다가 길게 가라앉음
+  const so=ac.createOscillator(),sg=ac.createGain();so.type='sine';so.frequency.setValueAtTime(52,t);so.frequency.exponentialRampToValueAtTime(22,t+3.2);
+  sg.gain.setValueAtTime(0.0001,t);sg.gain.exponentialRampToValueAtTime(0.9,t+0.07);sg.gain.exponentialRampToValueAtTime(0.0001,t+3.4);so.connect(sg);sg.connect(master);so.start(t);so.stop(t+3.5);
+  // 2) 땅울림(럼블): 낮은 소음이 천천히 커졌다 사라짐
+  const rs=ac.createBufferSource(),rl=ac.createBiquadFilter(),rg=ac.createGain();rs.buffer=nbuf;rs.loop=true;rl.type='lowpass';
+  rl.frequency.setValueAtTime(80,t);rl.frequency.linearRampToValueAtTime(300,t+0.9);rl.frequency.linearRampToValueAtTime(60,t+3.2);
+  rg.gain.setValueAtTime(0.0001,t);rg.gain.exponentialRampToValueAtTime(0.8,t+0.3);rg.gain.exponentialRampToValueAtTime(0.0001,t+3.2);rs.connect(rl);rl.connect(rg);rg.connect(master);rs.start(t);rs.stop(t+3.3);
+  // 3) 큰북(타이코) 4연타: 점점 느려지며 가라앉음
+  [0,0.3,0.68,1.2].forEach((d,i)=>{thud(root*2.8,root*0.7,0.75,0.72-i*0.1,d);noiseBurst(0.22,0.42-i*0.07,1100,0.8,d)});
+  // 4) 천둥의 갈라짐: 첫 순간 날카롭게 찢어지고 길게 울림
+  noiseBurst(0.5,0.75,2400,0.5,0.01);noiseBurst(0.5,0.6,520,0.5,0.08);noiseBurst(0.5,0.45,160,0.6,0.3);
+  // 5) 신비한 합창 + 종: 큰 울림 뒤에 천천히 피어올라 길게 이어짐
+  ch.forEach((d,i)=>{voice(VOICES.choir,freqOf(d+5),0.17,3.6,0.45+i*0.08,true);voice(VOICES.churchbell,freqOf(d+10),0.13,2.4,0.1+i*0.12,true)});
+  voice(VOICES.gong,freqOf(ch[0]+5),0.3,3,0,true);
+}
+/* 정산 소리: 한 종류씩 공개될 때 딩동~, 숫자가 올라갈 때 똑똑똑 올라가는 음, 마지막에 팡파르 */
+function coinTick(p){inst('glock',freqOf(snapChord(6+Math.floor(p*8))),0.07,0.25,0,true)}
+function settleChime(i){[0,1,2].forEach(j=>inst(j===2?'bell':'harp',freqOf(snapChord(7+i*2+j*2)),0.15,1.2,j*0.06,true));noiseBurst(0.25,0.22,7000,1.4)}
+function settleFinale(){
+  const ch=chordNow();
+  [0,2,4,6,8,10].forEach((s,i)=>inst(i%2?'harp':'glock',freqOf(snapChord(5+s)),0.18,1.4,i*0.08,true));
+  ch.forEach((d,i)=>{inst('trumpet',freqOf(d+5),0.16,1.6,0.5+i*0.06,true);inst('organ',freqOf(d+10),0.14,2,0.5,true)});
+  thud(120,50,0.5,0.7,0.5);noiseBurst(0.6,0.35,6500,1.2,0.5);
 }
 function pop(delay){
   if(!ac||muted)return;
@@ -255,13 +378,18 @@ const ITEMS={
 const IKEYS=Object.keys(ITEMS);
 let inv={sing:3,missile:3,roam:3,blast:3},sel='sing'; // 기본 수량 3개씩, 다시 와도 최소 2개씩은 보장
 try{const s=JSON.parse(localStorage.getItem('pongInv')||'null');if(s)for(const k of IKEYS)inv[k]=Math.max(2,Math.min(99,s[k]|0))}catch(e){}
-function saveInv(){try{localStorage.setItem('pongInv',JSON.stringify(inv))}catch(e){}}
+// 아낀 무기(정산 대상): 구슬(흰 테두리)을 터뜨려 "직접 얻은" 무기만 센다. 기본·선물로 받은 무기는 정산되지 않으니 마음껏 쓰면 됨
+let bank={sing:0,missile:0,roam:0,blast:0},confirmK=null,confirmT=0;
+try{const s=JSON.parse(localStorage.getItem('pongBank')||'null');if(s)for(const k of IKEYS)bank[k]=Math.max(0,s[k]|0)}catch(e){}
+for(const k of IKEYS)bank[k]=Math.min(bank[k],inv[k]);
+function saveInv(){try{localStorage.setItem('pongInv',JSON.stringify(inv));localStorage.setItem('pongBank',JSON.stringify(bank))}catch(e){}}
 const bar=document.getElementById('items'),btns={};
 IKEYS.forEach((k,i)=>{const b=document.createElement('button');b.className='ib';b.title=ITEMS[k].n+' - '+ITEMS[k].d+' ('+(i+1)+'번 키)';
   b.innerHTML=`<span class="ie">${ITEMS[k].e}</span><span class="in">${ITEMS[k].n}</span><span class="ic">0</span>`;
   b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();sel=k;useItem(k,W/2,H*0.9)});bar.appendChild(b);btns[k]=b});
-function renderBar(){for(const k of IKEYS){btns[k].querySelector('.ic').textContent=inv[k];btns[k].classList.toggle('empty',inv[k]<=0);btns[k].style.borderColor=(k===sel)?'#ffe14d':'rgba(255,255,255,.55)'}}
+function renderBar(){for(const k of IKEYS){const ic=btns[k].querySelector('.ic');ic.textContent=bank[k]>0?inv[k]+'⭐'+bank[k]:inv[k];ic.classList.toggle('bank',bank[k]>0);btns[k].classList.toggle('empty',inv[k]<=0);btns[k].style.borderColor=bank[k]>0?'#ffb300':(k===sel)?'#ffe14d':'rgba(255,255,255,.55)'}}
 renderBar();
+let shownScore=score,fxCount=0,lastTick=0,hudFx=false; // 화면에 보이는 숫자(정산 때 쭉 올라가는 연출용)
 let pulse=0,tintH=0,tintA=0,lastC100=Math.floor(score/100),lastC15=Math.floor(score/15),lastMs=0;
 const shots=[];let lastGift=performance.now(),itemHinted=false,lastSnd=0,lastAuto=0;
 const coarse=matchMedia('(pointer:coarse)').matches;
@@ -269,12 +397,12 @@ function whoosh(f0,f1,dur,vol){if(!ac||muted)return;const t=ac.currentTime,o=ac.
   o.type='sawtooth';lp.type='lowpass';lp.frequency.value=1800;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
   g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.03);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   o.connect(lp);lp.connect(g);g.connect(master);o.start(t);o.stop(t+dur+0.05)}
-function gainItem(k,x,y){inv[k]=Math.min(99,inv[k]+1);saveInv();renderBar();btns[k].classList.add('got');setTimeout(()=>btns[k].classList.remove('got'),500);
-  say(ITEMS[k].e+' '+ITEMS[k].n+' +1',x,y-20,50,30);inst('harp',freqOf(snapChord(11)),0.14,1,0);inst('harp',freqOf(snapChord(14)),0.12,1,0.08)}
+function gainItem(k,x,y){inv[k]=Math.min(99,inv[k]+1);bank[k]=Math.min(bank[k]+1,inv[k]);saveInv();renderBar();btns[k].classList.add('got');setTimeout(()=>btns[k].classList.remove('got'),500);
+  say(ITEMS[k].e+' '+ITEMS[k].n+' +1 ⭐ 아끼면 +'+IV[k].toLocaleString()+'퐁',x,y-20,50,26);inst('harp',freqOf(snapChord(11)),0.14,1,0);inst('harp',freqOf(snapChord(14)),0.12,1,0.08)}
 let lastRand=null;
-function fireSelected(x,y){ // 고를 필요 없이: 스페이스바·왼쪽 클릭을 누르면 가진 무기 중 하나가 무작위로 골라져 발사됨
-  const have=IKEYS.filter(q=>inv[q]>0);
-  if(!have.length){say('아이템 구슬(흰 테두리)을 터뜨려 보세요',W/2,H*0.7,50,22);return}
+function fireSelected(x,y){ // 고를 필요 없이: 스페이스바·왼쪽 클릭 = 아끼지 않은(기본·선물) 무기 중 하나가 무작위로 골라져 발사됨. 아낀 ⭐무기는 실수로 쓰지 않도록 아래 버튼으로만 사용
+  const have=IKEYS.filter(q=>inv[q]-bank[q]>0);
+  if(!have.length){say(IKEYS.some(q=>bank[q]>0)?'⭐ 아낀 무기는 정산하면 큰 점수! 쓰려면 아래 버튼을 두 번 눌러요':'아이템 구슬(흰 테두리)을 터뜨려 보세요',W/2,H*0.7,50,22);return}
   const pool=have.length>1?have.filter(q=>q!==lastRand):have; // 같은 무기가 연달아 나오지 않게
   const k=pool[Math.random()*pool.length|0];lastRand=k;
   useItem(k,x,y);
@@ -282,7 +410,12 @@ function fireSelected(x,y){ // 고를 필요 없이: 스페이스바·왼쪽 클
 function useItem(k,x,y){
   ensureStart();
   if(inv[k]<=0){btns[k].classList.add('no');setTimeout(()=>btns[k].classList.remove('no'),300);say('흰 테두리 구슬을 터뜨리면 아이템을 얻어요',W/2,H*0.7,50,22);return}
-  inv[k]--;saveInv();
+  if(inv[k]<=bank[k]){ // 아낀(정산 예정) 무기를 쓰려는 경우: 실수 방지를 위해 한 번 더 눌러야 발사
+    const nowT=performance.now();
+    if(!(confirmK===k&&nowT-confirmT<2500)){confirmK=k;confirmT=nowT;btns[k].classList.add('no');setTimeout(()=>btns[k].classList.remove('no'),300);
+      say('⭐ 아낀 무기예요! 쓰면 +'+IV[k].toLocaleString()+'퐁이 사라져요 · 한 번 더 누르면 발사',W/2,H*0.62,50,22);return}
+    confirmK=null}
+  inv[k]--;bank[k]=Math.min(bank[k],inv[k]);saveInv();
   {const i0=IKEYS.indexOf(k);for(let j=1;j<=IKEYS.length;j++){const q=IKEYS[(i0+j)%IKEYS.length];if(inv[q]>0){sel=q;break}}}
   renderBar();launch(k,x,y);
   shake=Math.max(shake,6);flash=Math.max(flash,0.2);tintH=30;tintA=0.25;pulse=1;arpeggio(6,5,1);
@@ -363,19 +496,43 @@ let BEST={};try{BEST=JSON.parse(localStorage.getItem('pongBest')||'{}')||{}}catc
 let RECS=[];try{RECS=JSON.parse(localStorage.getItem('pongRecs')||'[]')||[]}catch(e){}
 let sessId=Date.now(),lastSettleMsg='';
 /* ---------- 정산: 쓰지 않고 아낀 무기는 퐁으로 바뀌고, 이 판이 확정되며 새 판이 시작됨 ---------- */
-const IV={sing:6,missile:6,roam:8,blast:8}; // 무기 1개당 정산 퐁
+const IV={sing:1000,missile:3000,roam:6000,blast:10000}; // 아낀 무기 1개당 정산 퐁: 파괴력이 클수록 더 큼
+const flyers=[];let settleHold=false,settleTarget=0;
 function settle(){
-  const now=performance.now();if(!started||(now-playStart)/1000<30)return;
-  let n=0,bonus=0;for(const k of IKEYS){n+=inv[k];bonus+=inv[k]*IV[k]}
-  score+=bonus;sessionPops+=bonus;
-  const sec=Math.round((now-playStart)/1000),rate=Math.round(sessionPops/(sec/60));
+  const now=performance.now();if(!started)return;
+  const groups=IKEYS.filter(k=>bank[k]>0).map(k=>({k,n:bank[k],v:bank[k]*IV[k]}));
+  const bonus=groups.reduce((a,g)=>a+g.v,0),n=groups.reduce((a,g)=>a+g.n,0);if(bonus<=0)return;
+  const before=score;score+=bonus;sessionPops+=bonus;
+  const sec=Math.max(1,Math.round((now-playStart)/1000)),rate=Math.round(sessionPops/(sec/60));
   commitRec();
-  lastSettleMsg=`✅ 정산 완료! 무기 ${n}개 → +${bonus}퐁<br>이 판 ${sessionPops.toLocaleString()}퐁 · ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} · 분당 ${rate}`;
+  lastSettleMsg=`✅ 정산 완료! 아낀 무기 ${n}개 → +${bonus.toLocaleString()}퐁<br>이 판 ${sessionPops.toLocaleString()}퐁 · ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} · 분당 ${rate.toLocaleString()}`;
   // 새 판 시작 + 기본 무기 지급
   sessId=Date.now();sessionPops=0;playStart=now;lastMs=0;
-  inv={sing:3,missile:3,roam:3,blast:3};sel='sing';saveInv();renderBar();lastGift=now;
-  flash=0.5;shake=6;arpeggio(5,9,1,true);rings.push({x:W/2,y:H/2,r:10,max:Math.max(W,H)*0.6,hue:50,life:1});
-  say('💰 정산 +'+bonus+'퐁!',W/2,H*0.4,50,36);save();
+  inv={sing:3,missile:3,roam:3,blast:3};bank={sing:0,missile:0,roam:0,blast:0};sel='sing';saveInv();lastGift=now;
+  settleFx(groups,bonus,before);save();
+}
+/* 정산 연출: 무기가 한 종류씩 화면 위로 날아가 숫자가 되고(딩동~), 화면 숫자가 똑똑똑 소리와 함께 쭉 올라가고, 마지막에 색종이·팡파르 */
+function settleFx(groups,bonus,before){
+  settleHold=true;settleTarget=before;shownScore=Math.min(shownScore,before);
+  groups.forEach((g,i)=>{
+    setTimeout(()=>{
+      const r=btns[g.k].getBoundingClientRect();
+      for(let q=0;q<Math.min(g.n,6);q++)flyers.push({e:ITEMS[g.k].e,x:r.left+r.width/2,y:r.top,tx:W/2,ty:34,t:-q*0.09,dur:0.9,ph:rnd(0,6)});
+      settleTarget+=g.v;renderBar();
+      say(ITEMS[g.k].e+' ×'+g.n+'   +'+g.v.toLocaleString(),W/2,H*0.34+i*40,50,34);
+      settleChime(i);flash=Math.max(flash,0.22);shake=Math.max(shake,6);pulse=1;tintH=50;tintA=0.22;
+      rings.push({x:W/2,y:34,r:6,max:Math.min(W,H)*0.5,hue:50,life:1});
+    },300+i*750);
+  });
+  setTimeout(()=>{
+    settleTarget=score;settleHold=false;fxCount=2.8;
+    shake=14;flash=0.7;tintH=50;tintA=0.25;pulse=1;
+    rings.push({x:W/2,y:H/2,r:10,max:Math.max(W,H)*0.7,hue:50,life:1},{x:W/2,y:H/2,r:10,max:Math.max(W,H)*0.5,hue:320,life:1});
+    for(let k=0;k<(lowPerf?60:150);k++)parts.push({x:rnd(0,W),y:rnd(-40,10),vx:rnd(-60,60),vy:rnd(40,220),life:1,dec:rnd(0.35,0.7),r:rnd(3,6),hue:rnd(0,360)}); // 색종이
+    say('💰 정산 +'+bonus.toLocaleString()+'퐁!',W/2,H*0.42,50,46);
+    settleFinale();
+    if(navigator.vibrate)try{navigator.vibrate([30,40,30,40,60])}catch(e){}
+  },300+groups.length*750+500);
 }
 function commitRec(){
   const sec=(performance.now()-playStart)/1000;if(!started||sec<30||sessionPops<20)return;
@@ -393,7 +550,7 @@ function checkMilestone(){
 /* ---------- 단단한 구슬: 구슬마다 터뜨리는 데 드는 노력이 다르고, 노력만큼 보상도 큼 ---------- */
 // 체력 1(보통) / 2(단단) / 3(튼튼) / 5(강철) / 8(대장). 한 번 맞을 때마다 +1퐁, 마지막에 체력만큼 보너스.
 const HP_NAME={2:'단단',3:'튼튼',5:'강철',8:'대장'};
-function hpName(m){return m>=100?'검은 왕':m>=23?'태산':m>=15?'거석':m>=9?'거인':HP_NAME[m]||'단단'}
+function hpName(m){return m>=200?'무지개':m>=100?'검은 왕':m>=23?'태산':m>=15?'거석':m>=9?'거인':HP_NAME[m]||'단단'}
 /* 구슬이 화면 위로 떠나갈 때: 아쉬움이 아니라 포근한 배웅 소리 (벌점·감점 없음) */
 let lastEsc=0;
 function escapeOrb(o,now){
@@ -412,7 +569,7 @@ function strike(o,chain){
   if(now-(o.lastHit||0)<cd)return false; // 한 번 스치면 한 번만 맞음 (연타 노동 방지)
   o.lastHit=now;o.hp--;o.wob=1;score++;sessionPops++;
   const step=o.maxhp-o.hp;
-  hitSound(o,step);
+  if(o.special)specialHit(o,step);else hitSound(o,step);
   shake=Math.max(shake,Math.min(7,3.5+step*0.4));pulse=Math.min(1,pulse+0.3);tintH=o.hue;tintA=Math.min(0.22,tintA+0.05);
   for(let k=0;k<12;k++){const a=rnd(0,6.283),s=rnd(80,260);parts.push({x:o.x,y:o.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,dec:rnd(1.5,2.5),r:rnd(2,4),hue:55})}
   rings.push({x:o.x,y:o.y,r:o.r*0.8,max:o.r*1.9,hue:o.hue,life:1});
@@ -425,18 +582,35 @@ function tier(r){return r>=220?'퐁 전설 👑':r>=150?'퐁 마스터':r>=100?'
 function showRank(){
   commitRec();const sec=Math.round((performance.now()-playStart)/1000),cur=started&&sec>0?Math.round(sessionPops/(sec/60)):0,top=RECS[0]?RECS[0].rate:0;
   let h=`<h2>🏆 나의 기록</h2><div style="text-align:center">누적 <b>${score.toLocaleString()}</b> 퐁<br>칭호: <b>${tier(Math.max(top,cur))}</b><br>이번 판 ${sessionPops.toLocaleString()}퐁 · 분당 ${cur}</div>`;
-  const left=IKEYS.reduce((a,k)=>a+inv[k],0),bonus=IKEYS.reduce((a,k)=>a+inv[k]*IV[k],0),can=started&&(performance.now()-playStart)/1000>=30;
-  h+=`<div style="margin:12px 0 4px;padding:10px;border-radius:14px;background:rgba(255,255,255,.09);text-align:center">${lastSettleMsg?'<div style="color:#9dffb0;margin-bottom:6px">'+lastSettleMsg+'</div>':''}💰 <b>정산</b> · 쓰지 않은 무기 ${left}개 → <b>+${bonus}퐁</b><div class="cl" id="settleBtn" style="margin-top:8px;${can?'':'opacity:.45'}">${can?'무기 아껴서 정산하기':'30초 이상 플레이하면 정산할 수 있어요'}</div><div style="font-size:12px;opacity:.7;margin-top:4px">정산하면 이 판 기록이 확정되고 새 판이 시작돼요</div></div>`;
+  const left=IKEYS.reduce((a,k)=>a+bank[k],0),bonus=IKEYS.reduce((a,k)=>a+bank[k]*IV[k],0);
+  h+=`<div style="margin:12px 0 4px;padding:10px;border-radius:14px;background:rgba(255,255,255,.09);text-align:center">${lastSettleMsg?'<div style="color:#9dffb0;margin-bottom:6px">'+lastSettleMsg+'</div>':''}💰 <b>정산</b> · 아낀 무기 ${left}개 → <b>+${bonus.toLocaleString()}퐁</b><div class="cl" id="toSettle" style="margin-top:8px">💰 정산 화면 열기</div></div>`;
   h+='<h3>⚡ 가장 빨리 모은 기록</h3><table><tr><th>목표</th><th>최고 기록</th></tr>'+MS.map(m=>`<tr><td>${m.toLocaleString()}퐁</td><td>${BEST[m]?BEST[m]+'초':'-'}</td></tr>`).join('')+'</table>';
   h+='<h3>📈 분당 속도 순위 TOP 10</h3>'+(RECS.length?'<table><tr><th>#</th><th>날짜</th><th>퐁</th><th>시간</th><th>분당</th></tr>'+RECS.map((r,i)=>`<tr><td>${i+1}</td><td>${r.d}</td><td>${r.pops.toLocaleString()}</td><td>${Math.floor(r.sec/60)}:${String(r.sec%60).padStart(2,'0')}</td><td><b>${r.rate}</b></td></tr>`).join('')+'</table>':'<div style="text-align:center;opacity:.7">30초 이상 플레이하면 기록이 쌓여요</div>');
   h+='<div style="margin-top:10px;font-size:12px;opacity:.6;text-align:center">기록은 이 기기에 저장돼요</div><div class="cr" style="margin-top:8px">© 2026 ARIA. All rights reserved.<br>⚠ 무단 복제·배포·수정·상업적 이용을 금합니다.<br>비즈니스 문의: <a href="mailto:pin33@naver.com">pin33@naver.com</a></div><div class="cl">닫기</div>';
   rankBox.innerHTML=h;rankEl.style.display='flex';
-  const sb=document.getElementById('settleBtn');if(sb&&can)sb.addEventListener('pointerdown',e=>{e.stopPropagation();settle();showRank()});
+  const ts=document.getElementById('toSettle');if(ts)ts.addEventListener('pointerdown',e=>{e.stopPropagation();rankEl.style.display='none';showSettle()});
 }
+/* 💰 정산 화면: 아낀(⭐) 무기 목록과 합계를 보여주고, 누르면 정산 연출과 함께 퐁으로 바뀜 */
+const settleEl=document.getElementById('settle'),settleBox=document.getElementById('settleBox');
+function showSettle(){
+  let total=0,rows='';
+  for(const k of IKEYS){const n=bank[k];if(n>0){const v=n*IV[k];total+=v;rows+=`<tr><td>${ITEMS[k].e} ${ITEMS[k].n}</td><td>×${n}</td><td>${IV[k].toLocaleString()}</td><td><b>${v.toLocaleString()}</b></td></tr>`}}
+  const can=started&&total>0;
+  settleBox.innerHTML=`<h2>💰 무기 정산</h2><div style="text-align:center;opacity:.85;font-size:14px">쓰지 않고 아낀 ⭐무기를 퐁으로 바꿔요<br>무기가 강할수록 점수가 커요</div>`+
+    (rows?`<table style="margin-top:10px"><tr><th>무기</th><th>수량</th><th>개당</th><th>합계</th></tr>${rows}</table><div style="text-align:center;font-size:22px;margin-top:10px">합계 <b style="color:#ffe14d">+${total.toLocaleString()}퐁</b></div>`
+      :`<div style="text-align:center;margin:14px 0;opacity:.85">아낀 무기가 없어요.<br>흰 테두리 구슬을 터뜨려 무기를 모으고 쓰지 않고 아껴 보세요!<br><span style="font-size:13px">개당 🚀신기전 1,000 · 🎯유도탄 3,000 · 🔥떠돌이 불꽃 6,000 · 💥폭죽탄 10,000퐁</span></div>`)+
+    `<div class="cl" id="doSettle" style="${can?'':'opacity:.45'}">${can?'💰 정산하기':'아낀 무기가 있어야 정산할 수 있어요'}</div>`+
+    `<div class="cl" id="closeSettle" style="background:rgba(255,255,255,.15);color:#fff;margin-top:8px;font-weight:normal">닫기</div>`+
+    `<div style="font-size:12px;opacity:.65;text-align:center;margin-top:8px">기본·선물로 받은 무기는 정산되지 않아요. 마음껏 쓰세요!<br>정산하면 이 판 기록이 확정되고 새 판이 시작돼요.</div>`;
+  settleEl.style.display='flex';
+  const b=document.getElementById('doSettle');if(b&&can)b.addEventListener('pointerdown',e=>{e.stopPropagation();settleEl.style.display='none';settle()});
+}
+document.getElementById('moneyBtn').addEventListener('pointerdown',e=>{e.stopPropagation();showSettle()});
+settleEl.addEventListener('pointerdown',e=>{e.stopPropagation();settleEl.style.display='none'});
 document.getElementById('rankBtn').addEventListener('pointerdown',e=>{e.stopPropagation();showRank()});
 rankEl.addEventListener('pointerdown',e=>{e.stopPropagation();if(e.target.closest&&e.target.closest('a'))return;rankEl.style.display='none'});
 addEventListener('keydown',e=>{
-  if(e.code==='Space'){e.preventDefault();if(e.repeat)return;if(rankEl.style.display==='flex'){rankEl.style.display='none';return}
+  if(e.code==='Space'){e.preventDefault();if(e.repeat)return;if(rankEl.style.display==='flex'||settleEl.style.display==='flex'){rankEl.style.display='none';settleEl.style.display='none';return}
     ensureStart();fireSelected(px!==null?px:W/2,py!==null?py:H*0.9)}
   else if(e.key>='1'&&e.key<='4'){sel=IKEYS[+e.key-1];renderBar()}
 });
@@ -448,6 +622,38 @@ function spawnBoss(){
   orbs.push({x,y:H+r+20,r,vy:-1000*sc,sw:rnd(0.6,1.1),ph:rnd(0,6.28),amp:0,hue:280,gold:false,born:performance.now(),x0:x,mode:0,age:0,surgeAt:99,wf:1,wp:0,
     path:3,wt:0,wv:0,wtx:0,hp:100,maxhp:100,boss:true,slow:false});
   say('⚫ 검은 구슬 출현!',W/2,H*0.35,280,34);thud(70,30,0.6,0.8);noiseBurst(0.4,0.3,300,0.7);shake=Math.max(shake,5);
+}
+/* 무지개 구슬(강도 200): 한 번에 하나만, 숫자는 안 보이고 색·크기·소리로 상태를 알려줌.
+   검은 구슬보다 천천히 올라오고, 안전선을 넘으면 화면 전체를 넓고 크게 누비며 돌아다님. 맞을 때마다 지구상의 온갖 악기 소리가 무작위로 울림 */
+let specNext=performance.now()+70000;
+function spawnSpecial(){
+  const r=Math.min(110,Math.max(80,W*0.2)),x=rnd(r+20,Math.max(r+21,W-r-20));
+  orbs.push({x,y:H+r+20,r,baseR:r,vy:0,sw:1,ph:rnd(0,6.28),amp:0,hue:rnd(0,360),gold:false,born:performance.now(),x0:x,mode:0,age:0,surgeAt:99,wf:1,wp:0,
+    path:0,wt:0,wv:0,wtx:0,hp:200,maxhp:200,special:true,slow:false,vx:0,vy2:0,tw:0,tx:x,ty:H*0.5,hueT:rnd(0,360),rT:r,rt:0});
+  say('🌈 무지개 구슬 출현!',W/2,H*0.35,300,34);
+  thud(60,28,0.8,0.9);noiseBurst(0.5,0.3,260,0.7);shake=Math.max(shake,6);
+  voice(VOICES.choir,freqOf(chordNow()[0]+5),0.2,1.6,0,true);voice(VOICES.churchbell,freqOf(chordNow()[2]+10),0.14,1.6,0.1,true);
+}
+function specialMove(o,dt,t){
+  const sc=H/700,frac=o.hp/o.maxhp;
+  // 색·크기가 계속 무작위로 변함 (맞을수록 더 빨리, 더 크게 출렁임)
+  o.rt-=dt;if(o.rt<=0){o.rt=rnd(0.35,1.1);o.hueT=rnd(0,360);o.rT=o.baseR*rnd(0.62,1.25)*(1+(1-frac)*0.15)}
+  const dh=((o.hueT-o.hue+540)%360)-180;o.hue=(o.hue+dh*Math.min(1,dt*(5+(1-frac)*10))+360)%360;
+  o.r+=(Math.min(o.rT,W*0.27)-o.r)*Math.min(1,dt*3);
+  if(!o.slow){ // 아래에서 올라올 땐 검은 구슬(초당 1000)보다 느리게
+    o.y-=620*sc*dt;
+    if(o.y<SAFE()){o.slow=true;o.tw=0;thud(80,36,0.5,0.7)}
+  }else{ // 안전선을 넘으면 넓은 반경을 천천히 누비며 돌아다님
+    o.tw-=dt;if(o.tw<=0){o.tw=rnd(1.4,3.2);o.tx=rnd(o.r,W-o.r);o.ty=rnd(H*0.14,Math.max(H*0.3,SAFE()-o.r-8))}
+    const dx=o.tx-o.x,dy=o.ty-o.y,d=Math.hypot(dx,dy)||1,acc=260*sc;
+    o.vx+=dx/d*acc*dt;o.vy2+=dy/d*acc*dt;
+    const mx=210*sc,sp=Math.hypot(o.vx,o.vy2);if(sp>mx){o.vx*=mx/sp;o.vy2*=mx/sp}
+    if(px!==null){const ddx=px-o.x,ddy=py-o.y;if(ddx*ddx+ddy*ddy<(o.r+160)*(o.r+160)){o.x+=ddx*dt*0.9;o.y+=ddy*dt*0.9}} // 마우스 가까이에선 살짝 끌려옴
+    o.x+=o.vx*dt;o.y+=o.vy2*dt;
+    if(o.x<o.r){o.x=o.r;o.vx=Math.abs(o.vx)}if(o.x>W-o.r){o.x=W-o.r;o.vx=-Math.abs(o.vx)}
+    if(o.y<o.r*0.6){o.y=o.r*0.6;o.vy2=Math.abs(o.vy2)}
+    if(o.y>SAFE()-o.r*0.3){o.y=SAFE()-o.r*0.3;o.vy2=-Math.abs(o.vy2)}
+  }
 }
 function spawn(initial,fast){
   const r=rnd(24,62);
@@ -466,7 +672,7 @@ function spawn(initial,fast){
   if(!o.gold){
     const q=Math.random(),hp=q<0.76?1:q<0.87?2:q<0.93?3:q<0.96?5:q<0.98?8:9+Math.floor(Math.pow(Math.random(),1.6)*22); // 마지막 2%는 터치 9~30회짜리 초고밀도 // 구슬마다 터뜨리는 노력의 크기가 다름
     if(hp>1){o.hp=o.maxhp=hp;o.r=hp>=9?Math.min(Math.max(72,60+hp*1.6),Math.min(112,W*0.21)):Math.max(o.r,hp>=8?72:hp>=5?54:42);o.vy*=1/(1+0.09*(hp-1))} // 밀도가 클수록 묵직하게 천천히 올라옴
-    else if(Math.random()<0.15){o.item=IKEYS[Math.random()*IKEYS.length|0];o.r=Math.max(o.r,38)} // 흰 테두리 아이템 구슬
+    else if(Math.random()<0.016){o.item=IKEYS[Math.random()*IKEYS.length|0];o.r=Math.max(o.r,38)} // 흰 테두리 아이템 구슬
   }
 }
 
@@ -636,12 +842,15 @@ const PRAISE=['좋아요','시원해요','굿','예뻐요','쏴아~','후련해�
 function popOrb(o,chain){
   const i=orbs.indexOf(o);if(i<0)return;orbs.splice(i,1);
   if(o.boss)bossNext=performance.now()+35000; // 검은 구슬은 쓰러뜨린 뒤 35초 뒤에 다시 나타남
+  if(o.special)specNext=performance.now()+90000; // 무지개 구슬은 90초 뒤에 다시 나타남
   const now=performance.now();
   combo=(now-lastPop<1000)?combo+1:1;lastPop=now;
   score++;sessionPops++;
   if(o.maxhp>1){ // 노력한 만큼 큰 보상: 체력만큼 보너스 퐁 + 더 큰 폭발
-    breakSound(o);
-    const b=o.boss?o.maxhp*5:o.maxhp>8?o.maxhp*3:o.maxhp; // 검은 구슬은 보너스 5배 (총 600퐁)
+    if(o.special)specialBreak();else breakSound(o);
+    const b=o.special?o.maxhp*25:o.boss?o.maxhp*20:o.maxhp>8?o.maxhp*3:o.maxhp; // 무지개 구슬 보너스 5,000퐁 / 검은 구슬 2,000퐁 (무기 정산 값이 커진 만큼 균형)
+    if(o.special){shake=24;flash=1;tintH=o.hue;tintA=0.3;pulse=1;for(let w=0;w<7;w++)rings.push({x:o.x,y:o.y,r:10+w*6,max:Math.max(W,H)*(0.35+w*0.12),hue:w*50,life:1});
+      for(let k=0;k<(lowPerf?60:160);k++){const a=rnd(0,6.283),s=rnd(150,700);parts.push({x:o.x,y:o.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:1,dec:rnd(0.5,1),r:rnd(3,7),hue:rnd(0,360)})}}
     if(o.boss){shake=14;flash=0.7;arpeggio(3,9,1,true);arpeggio(8,6,1,true);for(let w=0;w<3;w++)rings.push({x:o.x,y:o.y,r:10+w*8,max:Math.max(W,H)*(0.45+w*0.2),hue:[280,50,320][w],life:1})} // 초고밀도 구슬은 보너스가 3배 (노력한 만큼 크게)
     score+=b;sessionPops+=b;shake=Math.max(shake,Math.min(12,5+b*0.5));flash=Math.max(flash,Math.min(0.6,0.12+b*0.03));
     say('💪 '+hpName(o.maxhp)+' 구슬 +'+(o.maxhp+b)+'퐁!',o.x,o.y-o.r,55,30);arpeggio(5,Math.min(9,3+Math.floor(o.maxhp/2)),1);
@@ -695,7 +904,7 @@ cv.addEventListener('pointercancel',()=>{px=py=lx=ly=null});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 function ensureStart(){
   initAudio();if(ac&&ac.state==='suspended')ac.resume();
-  if(!started){started=true;playStart=performance.now();startEl.style.opacity=0;setTimeout(()=>startEl.style.display='none',900);
+  if(!started){started=true;playStart=performance.now();bossNext=playStart+25000;specNext=playStart+70000;startEl.style.opacity=0;setTimeout(()=>startEl.style.display='none',900);
     // 시작하자마자 구슬이 분수처럼 솟아오름
     for(let i=0;i<14;i++)spawn(false,true);
     for(let i=0;i<7;i++)tone(freqOf(i*1+2),0.12,1.2,i*0.06);
@@ -754,7 +963,7 @@ function frame(now){
       o.wv+=(o.wtx-o.wv)*Math.min(1,dt*4);o.x0+=o.wv*dt;
       if(o.x0<o.r){o.x0=o.r;o.wtx=Math.abs(o.wtx)}if(o.x0>W-o.r){o.x0=W-o.r;o.wtx=-Math.abs(o.wtx)}
     }
-    o.y+=o.vy*fk*dt;o.x=o.x0+Math.sin(t*o.sw+o.ph)*o.amp;
+    if(o.special)specialMove(o,dt,t);else{o.y+=o.vy*fk*dt;o.x=o.x0+Math.sin(t*o.sw+o.ph)*o.amp}
     if(o.y<-o.r-30){escapeOrb(o,now);orbs.splice(orbs.indexOf(o),1);continue}
     if(cx!==null){
       const d=(lx!==null)?segDist(lx,ly,cx,cy,o.x,o.y):Math.hypot(cx-o.x,cy-o.y);
@@ -767,8 +976,9 @@ function frame(now){
   // 아이템 선물 + 도우미: 머리 쓸 필요 없이 계속 재미가 이어지게
   if(started){
     if(!orbs.some(o=>o.boss)&&performance.now()>bossNext){bossNext=Infinity;spawnBoss()}
-    const empty=IKEYS.every(k=>inv[k]<=0);
-    if(now-lastGift>(empty?6000:20000)){lastGift=now;const k=IKEYS[Math.random()*IKEYS.length|0];if(inv[k]<9){inv[k]++;saveInv();renderBar();say(ITEMS[k].e+' 선물 +1',W/2,H*0.68,50,28)}}
+    if(!orbs.some(o=>o.special)&&performance.now()>specNext){specNext=Infinity;spawnSpecial()}
+    const empty=IKEYS.every(k=>inv[k]-bank[k]<=0); // 아끼지 않은(쓸 수 있는) 무기가 하나도 없으면 빨리 선물
+    if(now-lastGift>(empty?6000:20000)){lastGift=now;const k=IKEYS[Math.random()*IKEYS.length|0];if(inv[k]-bank[k]<5){inv[k]++;saveInv();renderBar();say(ITEMS[k].e+' 선물 +1',W/2,H*0.68,50,28)}}
     if(now-Math.max(lastPop,playStart)>5000&&now-lastAuto>5000){lastAuto=now;launch('roam',W/2,H*0.85);say('🔥 도우미 불꽃!',W/2,H*0.62,30,28)} // 5초 동안 안 터뜨리면 도우미가 대신 터뜨려 줌
     if(!itemHinted&&now-playStart>5000){itemHinted=true;say(coarse?'👇 아래 버튼을 누르면 발사!':'🖱 왼쪽 클릭 또는 스페이스바 = 무작위 무기 발사!',W/2,H*0.72,50,26)}
   }
@@ -800,7 +1010,12 @@ function frame(now){
     ctx.fillStyle=gr;ctx.beginPath();ctx.arc(o.x,o.y,r,0,6.283);ctx.fill();
     ctx.fillStyle='rgba(255,255,255,0.65)';ctx.beginPath();ctx.ellipse(o.x-r*0.35,o.y-r*0.4,r*0.22,r*0.13,-0.6,0,6.283);ctx.fill();
     if(o.gold){ctx.strokeStyle=`hsla(50,100%,80%,${0.5+Math.sin(t*6)*0.3})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(o.x,o.y,r*1.12,0,6.283);ctx.stroke()}
-    if(o.hp>1){ // 단단한 구슬: 남은 횟수만큼 겹테두리 + 가운데 숫자 + 맞을수록 갈라지는 금
+    if(o.special){ // 무지개 구슬: 숫자 없이, 맞을수록 무지개 테두리가 늘고 가장자리 불꽃이 빨리 돎 (색·소리로 상태를 표현)
+      const fr=o.hp/o.maxhp,nR=2+Math.floor((1-fr)*5);
+      for(let i=0;i<nR;i++){ctx.strokeStyle=`hsla(${(h+i*47+t*140)%360},100%,${58+Math.sin(t*7+i)*12}%,${0.45+0.5*fr})`;ctx.lineWidth=3+(1-fr)*3;ctx.beginPath();ctx.arc(o.x,o.y,r*(1.05+i*0.09),0,6.283);ctx.stroke()}
+      for(let k=0;k<7;k++){const a=t*(1.2+(1-fr)*2.5)+k*0.897,rr=r*(1.2+0.12*Math.sin(t*3+k));ctx.fillStyle=`hsla(${(h+k*50)%360},100%,75%,0.9)`;ctx.beginPath();ctx.arc(o.x+Math.cos(a)*rr,o.y+Math.sin(a)*rr,3+fr*2,0,6.283);ctx.fill()}
+    }
+    if(o.hp>1&&!o.special){ // 단단한 구슬: 남은 횟수만큼 겹테두리 + 가운데 숫자 + 맞을수록 갈라지는 금
       const layers=Math.min(o.hp,o.maxhp>=9?6:4),tone2=o.boss?['#b57bff','#ffffff']:o.maxhp>=15?['#ff5a5a','#ffd54a']:o.maxhp>=9?['#ff7be0','#b24bff']:o.maxhp>=8?['#ffd54a','#ff9a3c']:o.maxhp>=5?['#e7f0ff','#8fa6c8']:['#f4f4f8','#a9adc0'];
       for(let li=0;li<layers;li++){ctx.strokeStyle=tone2[li%2];ctx.lineWidth=4;ctx.beginPath();ctx.arc(o.x,o.y,r*(1.03+li*0.1),0,6.283);ctx.stroke()}
       const cr=Math.min(8,Math.ceil((o.maxhp-o.hp)*Math.min(8,o.maxhp)/o.maxhp));ctx.strokeStyle='rgba(20,20,40,0.75)';ctx.lineWidth=2.5;
@@ -834,6 +1049,11 @@ function frame(now){
     ctx.fillStyle=cg;ctx.beginPath();ctx.arc(px,py,34,0,6.283);ctx.fill();
   }
   ctx.globalCompositeOperation='source-over';
+  // 정산: 무기 아이콘이 아래 버튼에서 위쪽 점수판으로 날아감
+  for(let i=flyers.length-1;i>=0;i--){const f=flyers[i];f.t+=dt/f.dur;if(f.t<0)continue;
+    if(f.t>=1){for(let k=0;k<8;k++)parts.push({x:f.tx,y:f.ty,vx:rnd(-160,160),vy:rnd(-160,60),life:1,dec:rnd(1.2,2),r:rnd(2,4),hue:rnd(35,60)});flyers.splice(i,1);continue}
+    const e=f.t*f.t*(3-2*f.t),x=f.x+(f.tx-f.x)*e+Math.sin(f.t*6.28+f.ph)*30*(1-f.t),y=f.y+(f.ty-f.y)*e-Math.sin(f.t*3.14)*80;
+    ctx.font=`${Math.round(34+10*(1-f.t))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(f.e,x,y);ctx.textBaseline='alphabetic'}
   // 글자
   ctx.textAlign='center';
   for(let i=texts.length-1;i>=0;i--){
@@ -847,7 +1067,14 @@ function frame(now){
   let sub='';
   if(started){const sec=(now-playStart)/1000;if(sec>=8){const rate=Math.round(sessionPops/(sec/60));bestRate=Math.max(bestRate,rate);
     sub=`<div style="font-size:14px;opacity:.8;letter-spacing:1px">${Math.floor(sec/60)}:${String(Math.floor(sec%60)).padStart(2,'0')} · 분당 ${rate.toLocaleString()}</div>`}}
-  const html='퐁 '+score.toLocaleString()+sub;if(html!==lastHud){hud.innerHTML=html;lastHud=html}
+  // 정산 중에는 화면 숫자가 똑똑똑 소리와 함께 쭉 올라가고, 숫자가 크고 금빛으로 빛남
+  const fxActive=settleHold||fxCount>0;if(fxCount>0)fxCount-=dt;
+  const tgt=settleHold?settleTarget:score;
+  if(shownScore<tgt){const diff=tgt-shownScore;shownScore+=fxActive?Math.min(diff,diff*Math.min(1,dt*2.2)+250*dt):Math.min(diff,Math.max(1,diff*Math.min(1,dt*14)))}
+  else if(shownScore>tgt)shownScore=tgt;
+  if(fxActive&&shownScore<tgt-1&&now-lastTick>42){lastTick=now;coinTick(Math.min(1,shownScore/Math.max(1,score)))}
+  if(fxActive!==hudFx){hudFx=fxActive;hud.style.color=fxActive?'#ffe14d':'#fff';hud.style.fontSize=fxActive?'32px':'22px';hud.style.textShadow=fxActive?'0 0 18px #ffb300,0 0 30px #ff7a00':'0 0 12px rgba(255,255,255,.7)'}
+  const html='퐁 '+Math.round(shownScore).toLocaleString()+sub;if(html!==lastHud){hud.innerHTML=html;lastHud=html}
   // 힌트: 처음이거나 한동안 가만히 있을 때만 부드럽게
   const idle=started&&(score===0||now-lastAct>6000);
   if(idle){hint.textContent=(px===null?'구슬 위로 손가락을 문질러 보세요':'구슬 쪽으로 천천히 움직여 보세요');hint.style.opacity=0.85}
